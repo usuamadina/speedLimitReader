@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/changeCamera"
+        android:icon="@android:drawable/ic_menu_camera"
+        android:title="@string/menuCamera"/>
+    <item
+        android:id="@+id/chageResolution"
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="@string/menuResolution">
+        <menu>
+            <item
+                android:id="@+id/resolution_800x600"
+                android:title="800x600"/>
+            <item
+                android:id="@+id/resolution_640x480"
+                android:title="640x480"/>
+            <item
+                android:id="@+id/resolution_320x240"
+                android:title="320x240"/>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/changeInput"
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title="@string/changeInput">
+        <menu>
+            <item
+                android:id="@+id/camera_Input"
+                android:title="@string/cameraInput"/>
+            <item
+                android:id="@+id/file1_Input"
+                android:title="@string/file1Input"/>
+            <item
+                android:id="@+id/file2_Input"
+                android:title="@string/file2Input"/>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/save_images"
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title=" Guardar imagenes ">
+    </item>
+</menu>

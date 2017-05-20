@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SpeedLimitReader</string>
+    <string name="menuCamera">Change Camera</string>
+    <string name="menuResolution">Change Resolution</string>
+    <string name="changeInput">Change Input Mode</string>
+    <string name="cameraInput">Camera</string>
+    <string name="file1Input">File 1</string>
+    <string name="file2Input">File 2</string>
+    <string name="saveImages">Save Images></string>
+</resources>

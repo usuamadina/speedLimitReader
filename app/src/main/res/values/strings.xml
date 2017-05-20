@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">SpeedLimitReader</string>
+    <string name="menuCamera">Cambiar Cámara</string>
+    <string name="menuResolution">Cambiar Resolución</string>
+    <string name="changeInput">Cambiar Entrada</string>
+    <string name="cameraInput">Cámara</string>
+    <string name="file1Input">Fichero 1</string>
+    <string name="file2Input">Fichero 2</string>
+    <string name="saveImages">Guardar Imágenes></string>
+</resources>
