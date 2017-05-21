@@ -1,4 +1,4 @@
-package org.example.baseproyect;
+package org.example.speedLimitReader;
 
 import android.Manifest;
 import android.app.Activity;
@@ -28,8 +28,6 @@ import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
-
-import android.hardware.Camera;
 
 import java.io.File;
 

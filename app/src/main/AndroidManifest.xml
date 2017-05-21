@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.example.baseproyect">
+    package="org.example.speedLimitReader">
     <uses-permission android:name="android.permission.CAMERA"/>
    <!-- <uses-feature android:name="android.hardware.camera" android:required="true" />-->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -13,7 +13,7 @@
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         android:screenOrientation="landscape"
         android:configChanges="keyboardHidden|orientation">
-        <activity android:name=".MainActivity">
+        <activity android:name="org.example.speedLimitReader.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

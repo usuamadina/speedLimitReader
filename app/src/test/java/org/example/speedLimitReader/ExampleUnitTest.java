@@ -1,4 +1,4 @@
-package org.example.baseproyect;
+package org.example.speedLimitReader;
 
 import org.junit.Test;
 
