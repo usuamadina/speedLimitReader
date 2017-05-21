@@ -1,8 +1,9 @@
-package org.example.baseproyect;
+package org.example.speedLimitReader;
 
 import android.util.Log;
 
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
@@ -24,26 +25,39 @@ public class Processor {
     Mat green;
     Mat blue;
     Mat maxGB;
+    Point centerCircle;
 
     public Processor() { //Constructor
         red = new Mat();
         green = new Mat();
         blue = new Mat();
         maxGB = new Mat();
+
     }
 
     public Mat process(Mat input) {
+
         Mat zr = RedZones(input);
         Mat binary = binarize(zr);
         Rect r = findRedCircle(binary);
         zr.release();
         binary.release();
-        if (r.height > -1 && r.width > -1) {
-            final Point P1 = new Point(r.x, r.y);
-            final Point P2 = new Point(r.x + r.width - 1, r.y + r.height - 1);
+        if(r.height == -1 && r.width == -1)
+            return input.clone();
 
-            Imgproc.rectangle(input, P1, P2, new Scalar(255, 0, 0));
+        ArrayList<Rect> digitsInsideSign = innerDiscSegmentation(input, r);
+
+        for (int i = 0; i<digitsInsideSign.size() ; i++){
+            Rect digit = digitsInsideSign.get(i);
+            final Point P3 = new Point(digit.x, digit.y);
+            final Point P4 = new Point(digit.x + digit.width, digit.y + digit.height);
+            Imgproc.rectangle(input, P3,P4, new Scalar(0,255,0));
         }
+
+        final Point P1 = new Point(r.x, r.y);
+        final Point P2 = new Point(r.x + r.width - 1, r.y + r.height - 1);
+
+        Imgproc.rectangle(input, P1, P2, new Scalar(255, 0, 0));
 
         return input;
     }
@@ -102,8 +116,8 @@ public class Processor {
         int minimumHeight = 30;
         float maxratio = (float) 0.75;
         // Seleccionar candidatos a circulos
-        for (int c = 0; c < blobs.size(); c++){
-            Log.d("Processor", "Numero de columnas de hierarchy = " + hierarchy.cols());
+        for (int c = 0; c < blobs.size(); c++) {
+           // Log.d("Processor", "Numero de columnas de hierarchy = " + hierarchy.cols());
             double[] data = hierarchy.get(0, c);
             int parent = (int) data[3];
             if (parent < 0) //Contorno exterior: rechazar
@@ -125,8 +139,8 @@ public class Processor {
                 continue;
 
             // Hasta aquí cumple todos los criterios. Aplicamos test de circularidad
-            Point center = getCenter(blobs.get(c));
-            if (isCircle(blobs.get(c), center)) {
+            centerCircle = getCenter(blobs.get(c));
+            if (isCircle(blobs.get(c), centerCircle)) {
                 int[] depth = getDepth(hierarchy);
                 if (depth[c] == 3) {
                     // final Point P1 = new Point(BB.x, BB.y);
@@ -201,8 +215,73 @@ public class Processor {
         return (r >= Math.sin(20));
     }
 
+    public ArrayList<Rect> innerDiscSegmentation(Mat input, Rect rect) {
+        Mat in = input.clone();
+        in = in.submat(rect);
+        Core.extractChannel(in, red, 0);
+        Log.d("Segm.Interior","antes de Otsu");
+        red = otsuBinarization(red);
+        Log.d("Segm.Interior","hace bien la binarización otsu");
+        ArrayList<Rect> segmentationDigits = digitSegmentation(red,rect);
+        return segmentationDigits;
+    }
 
+    public Mat otsuBinarization(Mat input) {
+        Log.d("otsu","hasta aquí llega bien");
+        Log.d("otsu", "tipo entrada " +input.type());
+        Imgproc.threshold(input, input, 0, 255, Imgproc.THRESH_BINARY_INV + Imgproc.THRESH_OTSU);
+        return input;
+    }
+
+    public ArrayList<Rect> digitSegmentation(Mat input, Rect rect) {
+      //  Log.d("Segmentación Digitos", "segmentando");
+        List<MatOfPoint> blobs = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+        Imgproc.findContours(input, blobs, hierarchy, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_NONE);
+        int minimumHeight = 12;
+        ArrayList<Rect> digits = new ArrayList();
+        // Seleccionar candidatos a circulos
+        for (int c = 0; c < blobs.size(); c++) {
+            //Log.d("Processor", "Numero de columnas de hierarchy = " + hierarchy.cols());
+            double[] data = hierarchy.get(0, c);
+            int parent = (int) data[3];
+
+            // Nos quedamos con el contorno externo, padre = -1
+            if (parent > 0)
+                continue;
+            Rect BB = Imgproc.boundingRect(blobs.get(c));
+            // Comprobar altura > 1/3 del cuadradito
+            if (BB.height < rect.height / 3)
+                continue;
+            // Comprobar altura > 12
+            if (BB.height < minimumHeight)
+                continue;
+            if (BB.height < BB.width)
+                continue;
+            // Comprobar no está cerca del borde
+            if (BB.x < 2 || BB.y < 2)
+                continue;
+            // Comprar que el numero está centrado en la señal
+            Point numberCenter = getCenter(blobs.get(c));
+            if ((numberCenter.y - centerCircle.y) < 1){
+                BB.x = BB.x + rect.x;
+                BB.y = BB.y + rect.y;
+                //final Point P1 = new Point(BB.x, BB.y);
+                //final Point P2 = new Point(BB.x + BB.width, BB.y + BB.height);
+                digits.add(BB);
+            }
+        }
+
+        hierarchy.release();
+        red.release();
+        return digits;
+
+    }
 }
+
+
+
+
 
 
 
