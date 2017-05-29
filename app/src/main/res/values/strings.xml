@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SpeedLimitReader</string>
+    <string name="app_name">speedLimitReader</string>
     <string name="menuCamera">Cambiar Cámara</string>
     <string name="menuResolution">Cambiar Resolución</string>
     <string name="changeInput">Cambiar Entrada</string>

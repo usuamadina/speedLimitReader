@@ -5,6 +5,8 @@ import android.util.Log;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -39,10 +41,10 @@ public class Processor {
         green = new Mat();
         blue = new Mat();
         maxGB = new Mat();
-        tabla_caracteristicas = new Mat(NUMERO_CLASES* MUESTRAS_POR_CLASE,
+        tabla_caracteristicas = new Mat(NUMERO_CLASES * MUESTRAS_POR_CLASE,
                 NUMERO_CARACTERISTICAS, CvType.CV_64FC1);
-        binaria1= new Mat();
-        binaria2= new Mat();
+        binaria1 = new Mat();
+        binaria2 = new Mat();
         entrada_gris = new Mat();
         crearTabla();
     }
@@ -53,26 +55,32 @@ public class Processor {
         Rect r = findRedCircle(binary);
         zr.release();
         binary.release();
-        if(r.height == -1 && r.width == -1)
+        if (r.height == -1 && r.width == -1)
             return input.clone();
 
         ArrayList<Integer> digitsInsideSign = innerDiscSegmentation(input, r);
-        if (digitsInsideSign.size()==0 || digitsInsideSign.size()>3)
+        Log.d("digitsInsideSign", " = " + digitsInsideSign);
+        if (digitsInsideSign.size() < 2 || digitsInsideSign.size() > 3)
             return input.clone();
-        Mat output = dibujarResultado(input,r,orderDigits(digitsInsideSign));
-
+        int finalDigits = orderDigits(digitsInsideSign);
+        if (finalDigits ==0)
+            return input.clone();
+        Mat output = dibujarResultado(input, r, finalDigits);
         return output;
     }
 
 
     public int orderDigits(ArrayList<Integer> digits) {
         String numbers = "";
+        Log.d("orderingDigits","Antes de ordenar los digitos");
         switch (digits.size()) {
             case 2:
                 if (digits.get(0) == 0) {
                     numbers = numbers + digits.get(1).toString() + digits.get(0).toString();
                 } else
                     numbers = numbers + digits.get(0).toString() + digits.get(1).toString();
+
+
                 break;
             case 3:
                 String first = new String();
@@ -102,30 +110,26 @@ public class Processor {
                 break;
 
         }
-        Log.d("Limite velocidad"," = " + numbers);
+        Log.d("Limite velocidad", " = " + numbers);
+       // if (numbers=="")
+       //     return 0;
         return Integer.parseInt(numbers);
     }
-
-
-
-
-
-
 
     Mat dibujarResultado(Mat imagen, Rect digit_rect, int digit) {
         Mat salida = imagen.clone();
         Point P1 = new Point(digit_rect.x, digit_rect.y);
-        Point P2 = new Point(digit_rect.x+digit_rect.width, digit_rect.y+digit_rect.height);
-        Imgproc.rectangle(salida, P1, P2, new Scalar(255,0,0));
-// Escribir numero
+        Point P2 = new Point(digit_rect.x + digit_rect.width, digit_rect.y + digit_rect.height);
+        Imgproc.rectangle(salida, P1, P2, new Scalar(255, 0, 0));
+        // Escribir numero
         int fontFace = 6;//FONT_HERSHEY_SCRIPT_SIMPLEX;
         double fontScale = 1;
         int thickness = 5;
-        Imgproc.putText(salida, Integer.toString(digit),P1, fontFace, fontScale,
-                new Scalar(0,0,0), thickness, 8,false);
+        Imgproc.putText(salida, Integer.toString(digit), P1, fontFace, fontScale,
+                new Scalar(0, 0, 0), thickness, 8, false);
         Imgproc.putText(salida, Integer.toString(digit),
                 P1, fontFace, fontScale,
-                new Scalar(255,255,255), thickness/2, 8,false);
+                new Scalar(255, 255, 255), thickness / 2, 8, false);
         return salida;
     }
 
@@ -184,7 +188,7 @@ public class Processor {
         float maxratio = (float) 0.75;
         // Seleccionar candidatos a circulos
         for (int c = 0; c < blobs.size(); c++) {
-           // Log.d("Processor", "Numero de columnas de hierarchy = " + hierarchy.cols());
+            // Log.d("Processor", "Numero de columnas de hierarchy = " + hierarchy.cols());
             double[] data = hierarchy.get(0, c);
             int parent = (int) data[3];
             if (parent < 0) //Contorno exterior: rechazar
@@ -285,21 +289,21 @@ public class Processor {
     public ArrayList<Integer> innerDiscSegmentation(Mat input, Rect rect) {
         Mat red = input.clone();
         ArrayList<Integer> croppedDigits = new ArrayList<Integer>();
-        Core.extractChannel(red,red, 0);
+        Core.extractChannel(red, red, 0);
         Mat binary = otsuBinarization(red);
-        Log.d("Segm.Interior","antes de Otsu");
+        Log.d("Segm.Interior", "antes de Otsu");
         Mat rectangle = binary.submat(rect);
-        Log.d("Segm.Interior","hace bien la binarización otsu");
-        ArrayList<Rect> segmentationDigits = digitSegmentation(rectangle,rect);
-        if (segmentationDigits.size()==0)
+        Log.d("Segm.Interior", "hace bien la binarización otsu");
+        ArrayList<Rect> segmentationDigits = digitSegmentation(rectangle, rect);
+        if (segmentationDigits.size() == 0)
             return croppedDigits;
-        for (int i=0 ; i < segmentationDigits.size(); i++){
+        for (int i = 0; i < segmentationDigits.size(); i++) {
             //Recortamos rectángulo en imagen original
             Log.d("innerDiscSegmentation", "recortamos digitos");
             Mat cropped = binary.submat(segmentationDigits.get(i));
             Log.d("innerDiscSegmentation", "leemos digitos");
             croppedDigits.add(leerRectangulo(cropped));
-            Log.d("innerDiscSegmentation","Leido digito" + leerRectangulo(cropped));
+            Log.d("innerDiscSegmentation", "Leido digito" + leerRectangulo(cropped));
         }
 
         binary.release();
@@ -309,14 +313,14 @@ public class Processor {
     }
 
     public Mat otsuBinarization(Mat input) {
-        Log.d("otsu","hasta aquí llega bien");
-        Log.d("otsu", "tipo entrada " +input.type());
+        Log.d("otsu", "hasta aquí llega bien");
+        Log.d("otsu", "tipo entrada " + input.type());
         Imgproc.threshold(input, input, 0, 255, Imgproc.THRESH_BINARY_INV + Imgproc.THRESH_OTSU);
         return input;
     }
 
     public ArrayList<Rect> digitSegmentation(Mat input, Rect rect) {
-      //  Log.d("Segmentación Digitos", "segmentando");
+        //  Log.d("Segmentación Digitos", "segmentando");
         List<MatOfPoint> blobs = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
         Imgproc.findContours(input, blobs, hierarchy, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_NONE);
@@ -327,7 +331,6 @@ public class Processor {
             //Log.d("Processor", "Numero de columnas de hierarchy = " + hierarchy.cols());
             double[] data = hierarchy.get(0, c);
             int parent = (int) data[3];
-
             // Nos quedamos con el contorno externo, padre = -1
             if (parent > 0)
                 continue;
@@ -335,7 +338,7 @@ public class Processor {
             // Comprobar altura > 1/3 del cuadradito
             if (BB.height < rect.height / 3)
                 continue;
-            // Comprobar altura > 12
+            // Comprobar altura > 12pixels
             if (BB.height < minimumHeight)
                 continue;
             if (BB.height < BB.width)
@@ -345,7 +348,7 @@ public class Processor {
                 continue;
             // Comprar que el numero está centrado en la señal
             Point numberCenter = getCenter(blobs.get(c));
-            if ((numberCenter.y - centerCircle.y) < 1){
+            if ((numberCenter.y - centerCircle.y) < 0.5) {
                 BB.x = BB.x + rect.x;
                 BB.y = BB.y + rect.y;
                 //final Point P1 = new Point(BB.x, BB.y);
@@ -371,7 +374,7 @@ public class Processor {
                 new double[]{0.6108391284942627, 0.985664427280426, 0.5884615778923035, 0.7125874161720276, 0.5996503829956055, 0.6629370450973511, 0.4828671216964722, 0.7608392238616943, 0.6695803999900818},
                 new double[]{0.6381308436393738, 0, 0.1727102696895599, 0.7140188217163086, 0.5850467085838318, 0.8407476544380188, 0.943925142288208, 0.4654205441474915, 0.02728971838951111},
                 new double[]{0.6880735158920288, 0.8049609065055847, 0.7363235950469971, 0.6299694776535034, 0.672782838344574, 0.6411824822425842, 0.6687054634094238, 0.7784574031829834, 0.7037037014961243},
-                new double[]{0.6497123241424561,0.7168009877204895, 0.4542001485824585, 0.6476410031318665, 0.6150747537612915, 0.7033372521400452, 0.5941311717033386, 0.9686998724937439, 0.5930955410003662},
+                new double[]{0.6497123241424561, 0.7168009877204895, 0.4542001485824585, 0.6476410031318665, 0.6150747537612915, 0.7033372521400452, 0.5941311717033386, 0.9686998724937439, 0.5930955410003662},
                 new double[]{0.6764705777168274, 1, 0.7450980544090271, 0.7091502547264099, 0.05228758603334427, 0.6993464231491089, 0.6339869499206543, 0.9934640526771545, 0.7058823704719543},
                 new double[]{0.3452012538909912, 0.3885449171066284, 0, 0.7770897746086121, 0.6501547694206238, 0.5789474248886108, 1, 1, 1},
                 new double[]{0.6407563090324402, 0.06722689419984818, 0.7825630307197571, 0.7132352590560913, 0.6365545988082886, 0.9222689270973206, 0.7226890921592712, 0.5850840210914612, 0.7058823704719543},
@@ -382,44 +385,105 @@ public class Processor {
                 new double[]{0.7272727489471436, 0.0202020201832056, 0.2727272808551788, 0.8383838534355164, 0.8181818127632141, 0.7272727489471436, 0.8989898562431335, 0.1616161614656448, 0},
                 new double[]{0.6928104758262634, 0.8071895837783813, 0.8333333134651184, 0.6764705777168274, 0.7026143074035645, 0.6209149956703186, 0.6601307392120361, 0.7712417840957642, 0.7941176891326904},
                 new double[]{0.7320261597633362, 0.8202614784240723, 0.5653595328330994, 0.6503268480300903, 0.5882353186607361, 0.6732026338577271, 0.6045752167701721, 0.9869281649589539, 0.6339869499206543}};
-        for (int i=0;i<20;i++)
-            tabla_caracteristicas.put(i, 0, datosEntrenamiento [i]);
+        for (int i = 0; i < 20; i++)
+            tabla_caracteristicas.put(i, 0, datosEntrenamiento[i]);
     }
 
     public int leerRectangulo(Mat rectangulo) {
         Mat vectorCaracteristicas = caracteristicas(rectangulo);
-// Buscamos la fila de la tabla que mas se parece
+        // Buscamos la fila de la tabla que mas se parece
         double Sumvv = vectorCaracteristicas.dot(vectorCaracteristicas);
         int nmin = 0;
-        double Sumvd = tabla_caracteristicas.row(nmin).dot( vectorCaracteristicas);
-        double Sumdd = tabla_caracteristicas.row(nmin).dot( tabla_caracteristicas.row(nmin));
+        double Sumvd = tabla_caracteristicas.row(nmin).dot(vectorCaracteristicas);
+        double Sumdd = tabla_caracteristicas.row(nmin).dot(tabla_caracteristicas.row(nmin));
         double D = Sumvd / Math.sqrt(Sumvv * Sumdd);
         double dmin = D;
-        for(int n= 1; n< tabla_caracteristicas.rows() ; n++) {
+        for (int n = 1; n < tabla_caracteristicas.rows(); n++) {
             Sumvd = tabla_caracteristicas.row(n).dot(vectorCaracteristicas);
-            Sumdd = tabla_caracteristicas.row(n).dot( tabla_caracteristicas.row(n));
+            Sumdd = tabla_caracteristicas.row(n).dot(tabla_caracteristicas.row(n));
             D = Sumvd / Math.sqrt(Sumvv * Sumdd);
-            if( D > dmin ){
+            if (D > dmin) {
                 dmin = D;
                 nmin = n;
             }
         }
-// A partir de la fila determinamos el numero
+        // A partir de la fila determinamos el numero
         nmin = nmin % 10;
         return nmin;
     }
 
     public Mat caracteristicas(Mat recorteDigito) { //rectangulo: imagen binaria de digito
-//Convertimos a flotante doble precisión
+        //Convertimos a flotante doble precisión
         Mat chardouble = new Mat();
         recorteDigito.convertTo(chardouble, CvType.CV_64FC1);
-//Calculamos vector de caracteristicas
+        //Calculamos vector de caracteristicas
         Mat digito_3x3 = new Mat();
-        Imgproc.resize(chardouble, digito_3x3, new Size(3,3), 0,0, Imgproc.INTER_AREA);
-// convertimos de 3x3 a 1x9 en el orden adecuado
+        Imgproc.resize(chardouble, digito_3x3, new Size(3, 3), 0, 0, Imgproc.INTER_AREA);
+        // convertimos de 3x3 a 1x9 en el orden adecuado
         digito_3x3 = digito_3x3.t();
-        return digito_3x3.reshape(1, 1);
+
+        chardouble.release();
+       return digito_3x3.reshape(1, 1);
     }
+
+
+   /* public Mat linearContrastIncrease(Mat input) {
+        MatOfInt channels;
+        MatOfInt binsNumber;
+        MatOfFloat interval;
+        Mat hist;
+        List<Mat> images;
+        float[] histogram;
+
+        channels = new MatOfInt(0);
+        binsNumber = new MatOfInt(256);
+        interval = new MatOfFloat(0, 256);
+        hist = new Mat();
+        images = new ArrayList<Mat>();
+        histogram = new float[256];
+
+        Mat output = new Mat();
+        images.clear(); //Eliminar imagen anterior si la hay
+        images.add(input); //Añadir imagen actual
+        Imgproc.calcHist(images, channels, new Mat(), hist,
+                binsNumber, interval);
+        //Lectura del histogram a un array de float
+        hist.get(0, 0, histogram);
+        //Calcular xmin y xmax
+
+        int total_pixeles = input.cols() * input.rows();
+        float saturationPercentage = (float) 0.05;
+        int saturatedPixels = (int) (saturationPercentage * total_pixeles);
+        int xmin = 0;
+        int xmax = 255;
+        float accumulated = 0f;
+        for (int n = 0; n < 256; n++) { //xmin
+            accumulated = accumulated + histogram[n];
+            if (accumulated > saturatedPixels) {
+                xmin = n;
+                break;
+            }
+        }
+        accumulated = 0;
+        for (int n = 255; n >= 0; n--) { //xmax
+            accumulated = accumulated + histogram[n];
+            if (accumulated > saturatedPixels) {
+                xmax = n;
+                break;
+            }
+        }
+
+        //Calculo de la salida
+        Core.subtract(input, new Scalar(xmin), output);
+        float slope = ((float) 255.0) / ((float) (xmax - xmin));
+        Core.multiply(output, new Scalar(slope), output);
+        channels.release();
+        binsNumber.release();
+        interval.release();
+        hist.release();
+        return output;
+
+    }*/
 }
 
 
